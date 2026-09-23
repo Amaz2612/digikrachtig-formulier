@@ -113,6 +113,10 @@ CREATE TABLE sections (
 --   toon_als_waarde      = het antwoord dat deze vraag zichtbaar maakt
 -- Allebei leeg betekent: de vraag is altijd zichtbaar.
 -- Voorbeeld: 'word_werkzaamheden' hangt af van 'word_gebruik' = 'ja'
+--
+-- type 'melding' = alleen tekst tonen, geen invulveld en er wordt
+-- nooit een antwoord voor opgeslagen. Voor zinnen uit de vragenlijst
+-- als 'Wij nemen contact met u op...'.
 -- ---------------------------------------------------------------
 CREATE TABLE questions (
   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -122,7 +126,8 @@ CREATE TABLE questions (
   label                 VARCHAR(500)    NOT NULL,
   help_tekst            VARCHAR(255)        NULL,
   type                  ENUM('tekst','tekstvak','getal','datum','email',
-                             'telefoon','radio','select','checkbox')
+                             'telefoon','radio','select','checkbox',
+                             'melding')
                         NOT NULL DEFAULT 'tekst',
   opties                JSON                NULL,
   verplicht             TINYINT(1)      NOT NULL DEFAULT 0,
