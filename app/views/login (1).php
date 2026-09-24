@@ -4,10 +4,6 @@
  * View: inlogpagina (tijdelijk, wordt vervangen door Padgin).
  *
  * Plaats dit bestand in: app/views/login.php
- *
- * Zelfde opmaak als de rest van de site: een witte kaart op de
- * lichtblauwe achtergrond met de golven. De smalle variant van de
- * kaart (.kaart-smal) staat al in public/css/stijl.css.
  */
 ?>
 <!DOCTYPE html>

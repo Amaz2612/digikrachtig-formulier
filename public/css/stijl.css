@@ -1,0 +1,462 @@
+/**
+ * Digikrachtig formulierensysteem
+ * Opmaak.
+ *
+ * Plaats dit bestand in: public/css/stijl.css
+ *
+ * Opzet: een witte kaart op een lichtblauwe achtergrond, met golven
+ * onderaan. Kleuren staan als variabelen bovenaan, dus een andere
+ * huisstijl is een kwestie van die paar regels aanpassen.
+ */
+
+:root {
+    --blauw:        #2f6bdc;
+    --blauw-donker: #1b3a6b;
+    --rood:         #d6455f;
+    --achtergrond:  #f3f6fd;
+    --tekst:        #1e2a3a;
+    --grijs:        #7a8699;
+    --rand:         #e2e8f4;
+    --groen:        #1c6b3c;
+    --kaart-radius: 18px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 2.5rem 1rem 6rem;
+    min-height: 100vh;
+    font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--tekst);
+    background: var(--achtergrond);
+}
+
+/* De golven onderaan de pagina */
+body::before {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 230px;
+    z-index: -1;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320' preserveAspectRatio='none'%3E%3Cpath fill='%23d6455f' d='M0,150 C380,40 1060,250 1440,120 L1440,320 L0,320 Z'/%3E%3Cpath fill='%232f6bdc' d='M0,215 C380,110 1060,315 1440,190 L1440,320 L0,320 Z'/%3E%3C/svg%3E")
+        no-repeat bottom center / 100% 100%;
+}
+
+/* --- De kaart --- */
+
+.kaart {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 2.25rem 2.5rem 2rem;
+    background: #fff;
+    border-radius: var(--kaart-radius);
+    box-shadow: 0 18px 45px rgba(31, 58, 107, 0.10);
+}
+
+/* --- Het label bovenaan --- */
+
+.merk {
+    display: inline-block;
+    padding: 0.45rem 1.1rem;
+    border-radius: 999px;
+    background: var(--blauw);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.balk-boven {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.gebruiker {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.studentnummer {
+    font-size: 0.85rem;
+    color: var(--grijs);
+}
+
+/* Kleiner dan de knoppen onderaan het formulier: deze staat in de
+   balk bovenaan en hoort daar niet de aandacht op te eisen. */
+.knop-uitloggen {
+    padding: 0.4rem 1.1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--grijs);
+}
+
+.knop-uitloggen:hover {
+    border-color: var(--blauw);
+    color: var(--blauw);
+}
+
+.balk-boven a {
+    font-size: 0.85rem;
+    color: var(--grijs);
+    text-decoration: none;
+}
+
+.balk-boven a:hover {
+    color: var(--blauw);
+    text-decoration: underline;
+}
+
+/* --- Voortgangsbalk --- */
+
+.voortgang-spoor {
+    height: 7px;
+    border-radius: 999px;
+    background: var(--rand);
+    overflow: hidden;
+}
+
+.voortgang-spoor span {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--blauw), var(--rood));
+    transition: width 0.25s ease;
+}
+
+#voortgang {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--grijs);
+}
+
+/* --- Koppen --- */
+
+h1 {
+    font-size: 1.55rem;
+    line-height: 1.3;
+    margin: 1.25rem 0 0.5rem;
+    color: var(--blauw-donker);
+}
+
+h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rand);
+    color: var(--blauw-donker);
+}
+
+.kaart > h2:first-of-type {
+    border-top: none;
+    padding-top: 0;
+}
+
+a {
+    color: var(--blauw);
+}
+
+/* --- Een vraag --- */
+
+[data-vraag] {
+    margin-bottom: 1.5rem;
+}
+
+[data-vraag][hidden] {
+    display: none;
+}
+
+[data-vraag] p {
+    margin: 0 0 0.4rem;
+}
+
+[data-vraag] > p > label {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+[data-vraag] small {
+    color: var(--grijs);
+    font-size: 0.85rem;
+}
+
+/* Keuzerondjes en vinkjes */
+[data-vraag] > label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.7rem;
+    margin-bottom: 0.35rem;
+    border: 1px solid var(--rand);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+}
+
+[data-vraag] > label:hover {
+    border-color: var(--blauw);
+    background: #f8faff;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--blauw);
+    flex: none;
+    margin: 0;
+}
+
+/* --- Invulvelden --- */
+
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    font: inherit;
+    color: inherit;
+    background: #fff;
+    border: 1px solid var(--rand);
+    border-radius: 10px;
+}
+
+textarea {
+    min-height: 6rem;
+    resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #aab4c4;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--blauw);
+    box-shadow: 0 0 0 3px rgba(47, 107, 220, 0.15);
+}
+
+/* --- Meldingen uit de vragenlijst (alleen tekst) --- */
+
+.melding {
+    background: #f6f8fd;
+    border-left: 3px solid var(--blauw);
+    border-radius: 8px;
+    padding: 0.7rem 1rem;
+}
+
+.melding em {
+    font-style: normal;
+    color: var(--grijs);
+    font-size: 0.9rem;
+}
+
+/* --- Foutmeldingen --- */
+
+.fout {
+    border-left: 3px solid var(--rood);
+    padding-left: 0.9rem;
+}
+
+.fout strong {
+    color: var(--rood);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/*
+ * De melding die voorwaarden.js onder een vraag zet als hij nog niet
+ * is ingevuld. Het ballonnetje van de browser verdwijnt bij de eerste
+ * muisklik; deze blijft staan tot de vraag ingevuld is.
+ */
+[data-vraag] .veld-fout {
+    margin: 0.4rem 0 0;
+    color: var(--rood);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.melding-fout,
+.melding-goed {
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.9rem;
+}
+
+.melding-fout {
+    background: #fdeef1;
+    color: var(--rood);
+}
+
+.melding-goed {
+    background: #e9f6ee;
+    color: var(--groen);
+}
+
+/* --- Knoppen --- */
+
+.knoppen {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rand);
+}
+
+button {
+    font: inherit;
+    font-weight: 600;
+    padding: 0.7rem 1.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--rand);
+    background: #fff;
+    color: var(--blauw);
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: var(--blauw);
+}
+
+button[name="verstuur"],
+.knoppen button[type="submit"]:only-of-type {
+    background: var(--blauw);
+    border-color: var(--blauw);
+    color: #fff;
+}
+
+button[name="verstuur"]:hover,
+.knoppen button[type="submit"]:only-of-type:hover {
+    background: #2559bd;
+}
+
+/* --- Inlogpagina en bedankpagina --- */
+
+.kaart-smal {
+    max-width: 420px;
+    margin-top: 8vh;
+}
+
+.kaart-smal label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+}
+
+/* Het zinnetje onder de kop, in hetzelfde grijs als de hulptekst
+   bij een vraag. */
+.kaart-smal small {
+    color: var(--grijs);
+    font-size: 0.85rem;
+}
+
+/* Eén knop in een smalle kaart staat beter over de volle breedte
+   dan rechts in een hoek. */
+.kaart-smal .knoppen {
+    justify-content: stretch;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+}
+
+.kaart-smal .knoppen button {
+    flex: 1;
+}
+
+/* --- Stappen --- */
+/*
+ * voorwaarden.js zet de klasse 'stappen' op het formulier en 'actief'
+ * op de sectie die in beeld hoort te staan. Staat JavaScript uit, dan
+ * komen die klassen er nooit en blijft alles gewoon onder elkaar staan.
+ */
+
+form.stappen [data-sectie] {
+    display: none;
+}
+
+form.stappen [data-sectie].actief {
+    display: block;
+}
+
+/* De kop van een stap staat nu bovenaan, dus daar hoort geen streep. */
+form.stappen [data-sectie].actief > h2:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+form.stappen .knop-vorige {
+    margin-right: auto;
+}
+
+/* Volgende en Versturen horen rechts, na 'Tussentijds opslaan'. */
+form.stappen .knop-volgende,
+form.stappen [name="verstuur"] {
+    order: 3;
+}
+
+form.stappen .knop-volgende {
+    background: var(--blauw);
+    border-color: var(--blauw);
+    color: #fff;
+}
+
+form.stappen .knop-volgende:hover {
+    background: #2559bd;
+}
+
+.knoppen button[hidden] {
+    display: none;
+}
+
+/* --- Telefoon --- */
+
+@media (max-width: 560px) {
+    body {
+        padding: 1.25rem 0.75rem 5rem;
+    }
+
+    .kaart {
+        padding: 1.5rem 1.25rem;
+        border-radius: 14px;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    .knoppen {
+        justify-content: stretch;
+    }
+
+    .knoppen button {
+        flex: 1;
+        padding: 0.75rem 1rem;
+    }
+}
