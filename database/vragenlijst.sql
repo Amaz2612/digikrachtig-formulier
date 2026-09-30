@@ -73,7 +73,6 @@ VALUES
   ('gegevens', 'functie', 'Functie:', NULL, 'tekst', NULL, 1, 30, NULL, NULL),
   ('gegevens', 'telefoonnummer', 'Telefoonnummer:', NULL, 'telefoon', NULL, 0, 40, NULL, NULL),
   ('gegevens', 'email', 'E-mail:', NULL, 'email', NULL, 1, 50, NULL, NULL),
-  ('gegevens', 'naam_student', 'Naam student:', NULL, 'tekst', NULL, 1, 60, NULL, NULL),
 
   -- m365
   ('m365', 'm365_gebruik', 'Wordt er binnen uw bedrijf gewerkt met Microsoft 365/Office?', NULL, 'radio', '["ja, Microsoft 365","ja, Microsoft Office","nee"]', 1, 10, NULL, NULL),
@@ -195,8 +194,8 @@ WHERE q.form_id = @form_id;
 DROP TEMPORARY TABLE tmp_vragen;
 
 -- ---------------------------------------------------------------
--- 4. Controle: moet 13 secties en 84 rijen geven
---    (77 vragen + 7 meldingen), waarvan 72 met een voorwaarde
+-- 4. Controle: moet 13 secties en 83 rijen geven
+--    (76 vragen + 7 meldingen), waarvan 72 met een voorwaarde
 -- ---------------------------------------------------------------
 SELECT
   (SELECT COUNT(*) FROM sections  WHERE form_id = @form_id) AS secties,

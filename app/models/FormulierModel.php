@@ -51,6 +51,20 @@ class FormulierModel
     }
 
     /**
+     * Bestaat er in dit formulier een sectie met deze code?
+     */
+    public function heeftSectie(int $formulierId, string $code): bool
+    {
+        $statement = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM sections
+             WHERE form_id = :form_id AND code = :code'
+        );
+        $statement->execute(['form_id' => $formulierId, 'code' => $code]);
+
+        return (int) $statement->fetchColumn() > 0;
+    }
+
+    /**
      * Alle vragen van een formulier, in de juiste volgorde.
      *
      * Per vraag wordt teruggegeven:

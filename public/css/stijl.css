@@ -96,6 +96,17 @@ body::before {
     color: var(--grijs);
 }
 
+/* De naam die de student bij het inloggen invulde, naast het nummer. */
+.studentnaam {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--blauw-donker);
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Kleiner dan de knoppen onderaan het formulier: deze staat in de
    balk bovenaan en hoort daar niet de aandacht op te eisen. */
 .knop-uitloggen {
@@ -363,6 +374,10 @@ button[name="verstuur"]:hover,
     margin-top: 8vh;
 }
 
+.kaart-smal input + label {
+    margin-top: 1rem;
+}
+
 .kaart-smal label {
     display: block;
     font-weight: 600;
@@ -459,4 +474,16 @@ form.stappen .knop-volgende:hover {
         flex: 1;
         padding: 0.75rem 1rem;
     }
+}
+
+/* Status van het automatisch opslaan, onder de voortgangsbalk. */
+#opslagstatus {
+    display: block;
+    min-height: 1.2em;
+    margin-top: 2px;
+    color: #6b7280;
+}
+
+#opslagstatus.opslag-fout {
+    color: #b91c1c;
 }

@@ -24,7 +24,8 @@ class InzendingModel
      */
     public function zoek(int $formulierId, int $gebruikerId): ?array
     {
-        $sql = 'SELECT id, form_id, user_id, status, gestart_op, ingediend_op
+        $sql = 'SELECT id, form_id, user_id, status, huidige_stap,
+                       gestart_op, ingediend_op
                 FROM form_submissions
                 WHERE form_id = :form_id
                   AND user_id = :user_id';
@@ -119,7 +120,8 @@ class InzendingModel
     public function slaAntwoordenOp(
         int $inzendingId,
         array $vragenPerCode,
-        array $antwoorden
+        array $antwoorden,
+        bool $log = true
     ): int {
         $zichtbaar = Voorwaarden::zichtbareCodes($vragenPerCode, $antwoorden);
         $aantal    = 0;
@@ -177,11 +179,15 @@ class InzendingModel
                 }
             }
 
-            $this->logGebeurtenis(
-                $inzendingId,
-                'opgeslagen',
-                $aantal . ' antwoorden'
-            );
+            // Automatisch opslaan gebeurt vaak; dat zetten we niet
+            // elke keer in het logboek.
+            if ($log) {
+                $this->logGebeurtenis(
+                    $inzendingId,
+                    'opgeslagen',
+                    $aantal . ' antwoorden'
+                );
+            }
 
             $this->pdo->commit();
         } catch (Throwable $fout) {
@@ -190,6 +196,23 @@ class InzendingModel
         }
 
         return $aantal;
+    }
+
+    /**
+     * Onthoudt bij welke stap (sectiecode) de student was, zodat hij
+     * na verversen of terugkomen op dezelfde plek verder gaat.
+     */
+    public function slaStapOp(int $inzendingId, ?string $stapCode): void
+    {
+        $statement = $this->pdo->prepare(
+            'UPDATE form_submissions
+             SET huidige_stap = :stap
+             WHERE id = :inzending_id AND status = \'concept\''
+        );
+        $statement->execute([
+            'stap'         => $stapCode,
+            'inzending_id' => $inzendingId,
+        ]);
     }
 
     /**

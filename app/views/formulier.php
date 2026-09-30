@@ -22,7 +22,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= htmlspecialchars($formulier['naam']) ?></title>
-    <link rel="stylesheet" href="css/stijl.css">
+    <link rel="stylesheet" href="css/stijl.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/stijl.css') ?>">
 </head>
 <body>
 
@@ -31,6 +31,11 @@
     <div class="balk-boven">
         <span class="merk">Digikrachtig Rivierenland</span>
         <div class="gebruiker">
+            <?php if (Auth::naam() !== null): ?>
+                <span class="studentnaam">
+                    <?= htmlspecialchars(Auth::naam()) ?>
+                </span>
+            <?php endif; ?>
             <span class="studentnummer">
                 <?= htmlspecialchars((string) Auth::studentnummer()) ?>
             </span>
@@ -48,20 +53,19 @@
 
     <div class="voortgang-spoor"><span></span></div>
     <small id="voortgang"></small>
+    <small id="opslagstatus" aria-live="polite"></small>
 
     <h1><?= htmlspecialchars($formulier['naam']) ?></h1>
-
-    <?php if (isset($_GET['opgeslagen'])): ?>
-        <p class="melding-goed">Je antwoorden zijn tussentijds opgeslagen.
-           Je kunt later verder gaan.</p>
-    <?php endif; ?>
 
     <?php if ($fouten !== []): ?>
         <p class="melding-fout">Er zijn <?= count($fouten) ?> velden niet goed
            ingevuld. Ze zijn hieronder gemarkeerd.</p>
     <?php endif; ?>
 
-    <form method="post" action="?actie=opslaan">
+    <?php /* autocomplete=off: anders zet de browser bij verversen oude
+             waarden terug die niet meer kloppen met wat is opgeslagen. */ ?>
+    <form method="post" action="?actie=opslaan" autocomplete="off"
+          data-start-stap="<?= htmlspecialchars((string) ($startStap ?? ''), ENT_QUOTES) ?>">
         <?= Beveiliging::veld() ?>
 
         <?php foreach ($structuur as $sectie): ?>
@@ -197,13 +201,12 @@
         <?php endforeach; ?>
 
         <div class="knoppen">
-            <button type="submit" name="opslaan" value="1" formnovalidate>Tussentijds opslaan</button>
             <button type="submit" name="verstuur" value="1">Versturen</button>
         </div>
     </form>
 
 </div>
 
-<script src="js/voorwaarden.js"></script>
+<script src="js/voorwaarden.js?v=<?= (int) @filemtime(__DIR__ . '/../../public/js/voorwaarden.js') ?>"></script>
 </body>
 </html>

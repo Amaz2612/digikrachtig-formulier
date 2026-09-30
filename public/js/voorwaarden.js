@@ -246,9 +246,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Kwam de pagina terug met fouten, dan beginnen we bij de stap
     // waar de eerste fout staat. Anders leest de invuller een melding
     // over velden die hij nergens kan vinden.
-    let huidigeStap = Math.max(0, stappen.findIndex(
+    // Zonder fouten gaan we verder waar de invuller gebleven was: de
+    // server geeft de laatst bewaarde stap mee in data-start-stap.
+    const foutStap = stappen.findIndex(
         stap => stap.querySelector('.fout') !== null
-    ));
+    );
+    const bewaardeStap = stappen.findIndex(
+        stap => stap.dataset.sectie === (formulier.dataset.startStap ?? '')
+    );
+
+    let huidigeStap = Math.max(0, foutStap !== -1 ? foutStap : bewaardeStap);
 
     const knoppen  = formulier.querySelector('.knoppen');
     const verstuur = formulier.querySelector('[name="verstuur"]');
@@ -273,10 +280,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Terug mag altijd: daar raakt niemand iets mee kwijt.
         knopVorige.addEventListener('click', () => {
-            if (huidigeStap > 0) {
-                huidigeStap--;
+            const vorige = zoekStap(-1);
+
+            if (vorige !== -1) {
+                huidigeStap = vorige;
                 bijwerken();
                 naarBoven();
+                opslaanNu();
             }
         });
 
@@ -285,12 +295,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (huidigeStap < stappen.length - 1) {
-                huidigeStap++;
+            const volgende = zoekStap(1);
+
+            if (volgende !== -1) {
+                huidigeStap = volgende;
                 bijwerken();
                 naarBoven();
+                opslaanNu();
             }
         });
+    }
+
+    /**
+     * Heeft deze stap iets te tonen? Een stap met vragen waarvan er
+     * op dit moment geen enkele zichtbaar is (bijvoorbeeld Word als
+     * er geen Microsoft 365 wordt gebruikt) slaan we over.
+     */
+    function stapHeeftInhoud(nummer) {
+        const inStap = stappen[nummer].querySelectorAll('[data-vraag]');
+
+        if (inStap.length === 0) {
+            return true;
+        }
+
+        return Array.from(inStap).some(element => !element.hidden);
+    }
+
+    /**
+     * Het nummer van de dichtstbijzijnde stap met inhoud, richting =
+     * 1 (verder) of -1 (terug). Geeft -1 als die er niet is.
+     */
+    function zoekStap(richting) {
+        for (let n = huidigeStap + richting; n >= 0 && n < stappen.length; n += richting) {
+            if (stapHeeftInhoud(n)) {
+                return n;
+            }
+        }
+
+        return -1;
     }
 
     function naarBoven() {
@@ -410,12 +452,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (metStappen) {
-            knopVorige.hidden   = huidigeStap === 0;
-            knopVolgende.hidden = huidigeStap === stappen.length - 1;
+            const isLaatste = zoekStap(1) === -1;
+
+            knopVorige.hidden   = zoekStap(-1) === -1;
+            knopVolgende.hidden = isLaatste;
 
             // Versturen kan pas als de invuller de laatste stap ziet.
             if (verstuur !== null) {
-                verstuur.hidden = huidigeStap !== stappen.length - 1;
+                verstuur.hidden = !isLaatste;
             }
         }
 
@@ -429,32 +473,161 @@ document.addEventListener('DOMContentLoaded', () => {
             const tekst = ingevuld + ' van de ' + totaal
                 + ' vragen ingevuld (' + deel + '%)';
 
+            // Overgeslagen stappen tellen we niet mee.
+            const teTonen = stappen
+                .map((stap, nummer) => nummer)
+                .filter(nummer => nummer === huidigeStap || stapHeeftInhoud(nummer));
+
             voortgang.textContent = metStappen
-                ? 'Stap ' + (huidigeStap + 1) + ' van ' + stappen.length
-                  + ' - ' + tekst
+                ? 'Stap ' + (teTonen.indexOf(huidigeStap) + 1) + ' van '
+                  + teTonen.length + ' - ' + tekst
                 : tekst;
         }
     }
 
-    formulier.addEventListener('change', bijwerken);
-    formulier.addEventListener('input', bijwerken);
+    // --- Automatisch opslaan ---
 
-    /**
-     * Versturen gaat langs dezelfde controle als 'Volgende', zodat
-     * ook de laatste stap compleet is. Tussentijds opslaan mag altijd:
-     * de student is dan nog bezig en de server klaagt daar ook niet
-     * over lege velden.
+    /*
+     * Er is geen knop meer om tussentijds op te slaan. In plaats daarvan
+     * gaat de inhoud van het formulier naar de server:
+     *   - kort nadat de invuller iets wijzigt (of ophoudt met typen)
+     *   - bij Vorige en Volgende, samen met de stap waar hij nu staat
+     *   - als de pagina wordt gesloten of naar de achtergrond gaat
+     * De server bewaart dan de antwoorden en de stap, zodat verversen of
+     * later terugkomen op dezelfde plek uitkomt. Zie
+     * FormulierController::autosave().
      */
-    formulier.addEventListener('submit', gebeurtenis => {
-        const knop = gebeurtenis.submitter;
+    const OPSLAAN_WACHTTIJD = 800; // milliseconden na de laatste wijziging
 
-        if (knop !== null && knop.name === 'opslaan') {
+    const opslagStatus = document.getElementById('opslagstatus');
+
+    let wijzigingTimer = null;
+    let gewijzigd      = false;  // er is iets veranderd sinds de laatste keer
+    let bezigMetOpslaan = false;
+    let nogEenKeer     = false;  // er kwam iets bij tijdens het opslaan
+    let wordtVerstuurd = false;  // Versturen is ingedrukt, dat regelt de server
+
+    function toonOpslagStatus(tekst, isFout = false) {
+        if (opslagStatus === null) {
             return;
         }
 
+        opslagStatus.textContent = tekst;
+        opslagStatus.classList.toggle('opslag-fout', isFout);
+    }
+
+    function opslagGegevens() {
+        const gegevens = new FormData(formulier);
+
+        if (metStappen) {
+            gegevens.set('stap', stappen[huidigeStap].dataset.sectie);
+        }
+
+        return gegevens;
+    }
+
+    async function opslaan() {
+        if (bezigMetOpslaan) {
+            nogEenKeer = true;
+            return;
+        }
+
+        bezigMetOpslaan = true;
+        wijzigingTimer = null;
+        gewijzigd = false;
+        toonOpslagStatus('Opslaan...');
+
+        try {
+            const antwoord = await fetch('?actie=autosave', {
+                method:      'POST',
+                body:        opslagGegevens(),
+                credentials: 'same-origin',
+                keepalive:   true
+            });
+
+            if (antwoord.status === 401) {
+                toonOpslagStatus('Je bent uitgelogd. Log opnieuw in om verder te gaan.', true);
+            } else if (antwoord.status === 409) {
+                toonOpslagStatus('Dit formulier is al verstuurd.', true);
+            } else if (!antwoord.ok) {
+                throw new Error('status ' + antwoord.status);
+            } else {
+                toonOpslagStatus('Automatisch opgeslagen');
+            }
+        } catch (fout) {
+            gewijzigd = true;
+            toonOpslagStatus('Opslaan mislukt. We proberen het opnieuw.', true);
+            wijzigingTimer = setTimeout(opslaan, 5000);
+        } finally {
+            bezigMetOpslaan = false;
+
+            if (nogEenKeer) {
+                nogEenKeer = false;
+                opslaan();
+            }
+        }
+    }
+
+    // Opslaan zodra de invuller even stopt met typen.
+    function opslaanLatenVolgen() {
+        gewijzigd = true;
+        clearTimeout(wijzigingTimer);
+        wijzigingTimer = setTimeout(opslaan, OPSLAAN_WACHTTIJD);
+    }
+
+    // Direct opslaan, bijvoorbeeld bij een stap verder of terug.
+    function opslaanNu() {
+        clearTimeout(wijzigingTimer);
+        opslaan();
+    }
+
+    /**
+     * Pagina wordt gesloten, ververst of gaat naar de achtergrond. Een
+     * gewone fetch wordt dan soms afgebroken, sendBeacon niet: de
+     * browser verstuurt die nog na het sluiten.
+     */
+    function opslaanBijWeggaan() {
+        if (wordtVerstuurd || (!gewijzigd && !wijzigingTimer)) {
+            return;
+        }
+
+        clearTimeout(wijzigingTimer);
+        wijzigingTimer = null;
+
+        if (navigator.sendBeacon('?actie=autosave', opslagGegevens())) {
+            gewijzigd = false;
+        }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            opslaanBijWeggaan();
+        }
+    });
+    window.addEventListener('pagehide', opslaanBijWeggaan);
+
+    formulier.addEventListener('change', () => {
+        bijwerken();
+        opslaanLatenVolgen();
+    });
+    formulier.addEventListener('input', () => {
+        bijwerken();
+        opslaanLatenVolgen();
+    });
+
+    /**
+     * Versturen gaat langs dezelfde controle als 'Volgende', zodat
+     * ook de laatste stap compleet is.
+     */
+    formulier.addEventListener('submit', gebeurtenis => {
         if (!stapIsGoedIngevuld()) {
             gebeurtenis.preventDefault();
+            return;
         }
+
+        // De server slaat de antwoorden zelf op bij versturen.
+        wordtVerstuurd = true;
+        clearTimeout(wijzigingTimer);
     });
 
     /**
@@ -477,4 +650,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     bijwerken();
+
+    // Kwamen we terug op een stap die nu leeg is (het antwoord waar hij
+    // van afhangt is veranderd), ga dan naar de dichtstbijzijnde stap
+    // met vragen.
+    if (metStappen && !stapHeeftInhoud(huidigeStap)) {
+        const naar = zoekStap(1) !== -1 ? zoekStap(1) : zoekStap(-1);
+
+        if (naar !== -1) {
+            huidigeStap = naar;
+            bijwerken();
+        }
+    }
 });

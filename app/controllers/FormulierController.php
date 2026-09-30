@@ -56,7 +56,70 @@ class FormulierController
             'structuur'  => $structuur,
             'antwoorden' => $antwoorden,
             'fouten'     => $fouten,
+            'startStap'  => $inzending['huidige_stap'] ?? null,
         ]);
+    }
+
+    /**
+     * Automatisch opslaan, aangeroepen door voorwaarden.js terwijl de
+     * student invult. Geeft JSON terug in plaats van een pagina.
+     *
+     * Werkt als tussentijds opslaan: verplichte velden mogen leeg.
+     * Antwoorden die niet kloppen (een half ingetypt e-mailadres) worden
+     * niet bewaard; de rest wel. De student krijgt hier geen foutmeldingen
+     * van te zien, die komen pas bij Volgende of Versturen.
+     */
+    public function autosave(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!Beveiliging::tokenKlopt($_POST['csrf_token'] ?? null)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'reden' => 'verlopen']);
+
+            return;
+        }
+
+        $formulier   = $this->haalFormulier();
+        $formulierId = (int) $formulier['id'];
+
+        $inzending   = $this->inzendingModel->haalOfMaak(
+            $formulierId,
+            Auth::gebruikerId()
+        );
+        $inzendingId = (int) $inzending['id'];
+
+        if ($inzending['status'] === 'ingediend') {
+            http_response_code(409);
+            echo json_encode(['ok' => false, 'reden' => 'ingediend']);
+
+            return;
+        }
+
+        $vragenPerCode = $this->formulierModel->vragenPerCode($formulierId);
+        $antwoorden    = $this->haalAntwoordenUitPost($vragenPerCode);
+
+        $fouten = Validatie::controleer($vragenPerCode, $antwoorden, false);
+
+        foreach (array_keys($fouten) as $code) {
+            unset($antwoorden[$code]);
+        }
+
+        $this->inzendingModel->slaAntwoordenOp(
+            $inzendingId,
+            $vragenPerCode,
+            $antwoorden,
+            false
+        );
+
+        // De stap alleen onthouden als het een sectie is die bestaat.
+        $stap = $_POST['stap'] ?? null;
+
+        if (is_string($stap) && $this->formulierModel->heeftSectie($formulierId, $stap)) {
+            $this->inzendingModel->slaStapOp($inzendingId, $stap);
+        }
+
+        echo json_encode(['ok' => true]);
     }
 
     /**

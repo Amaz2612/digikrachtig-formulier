@@ -21,11 +21,42 @@ class Auth
     }
 
     /**
-     * Logt in op studentnummer. De gebruiker wordt aangemaakt als
-     * hij nog niet bestaat, zodat je makkelijk kunt testen.
+     * Maakt de ingevulde naam schoon en controleert hem. De student
+     * mag invullen wat hij wil (meerdere studenten mogen dezelfde naam
+     * hebben); de naam is alleen om hem makkelijker te herkennen.
+     * Geeft null terug als er niets bruikbaars staat.
      */
-    public static function login(PDO $pdo, string $studentnummer): bool
+    public static function schoonNaam(string $naam): ?string
     {
+        $naam = trim(preg_replace('/\s+/u', ' ', $naam) ?? '');
+
+        if ($naam === '' || mb_strlen($naam) > 60) {
+            return null;
+        }
+
+        // Geen stuurtekens; en de versleutelde kolom is 255 bytes.
+        if (preg_match('/[\x00-\x1F\x7F]/', $naam) || strlen($naam) > 200) {
+            return null;
+        }
+
+        return $naam;
+    }
+
+    /**
+     * Logt in op studentnummer en bewaart de naam (versleuteld). De
+     * gebruiker wordt aangemaakt als hij nog niet bestaat, zodat je
+     * makkelijk kunt testen. Vult de student bij een volgende keer een
+     * andere naam in, dan wordt de naam bijgewerkt.
+     *
+     * @param string $naam    al schoongemaakt met schoonNaam()
+     * @param string $sleutel crypt_sleutel uit config/config.php
+     */
+    public static function login(
+        PDO $pdo,
+        string $studentnummer,
+        string $naam,
+        string $sleutel
+    ): bool {
         $studentnummer = trim($studentnummer);
 
         if (!preg_match('/^[0-9]{4,20}$/', $studentnummer)) {
@@ -48,6 +79,20 @@ class Auth
             $id = (int) $rij['id'];
         }
 
+        $versleuteld = Versleuteling::versleutel($naam, $sleutel);
+
+        $bewaar = $pdo->prepare(
+            'INSERT INTO user_profiles (user_id, username_enc, username_iv)
+             VALUES (:user_id, :enc, :iv)
+             ON DUPLICATE KEY UPDATE
+                username_enc = VALUES(username_enc),
+                username_iv  = VALUES(username_iv)'
+        );
+        $bewaar->bindValue('user_id', $id, PDO::PARAM_INT);
+        $bewaar->bindValue('enc', $versleuteld['enc'], PDO::PARAM_LOB);
+        $bewaar->bindValue('iv', $versleuteld['iv'], PDO::PARAM_LOB);
+        $bewaar->execute();
+
         self::startSessie();
 
         // Nieuw sessie-id na inloggen, tegen session fixation.
@@ -55,6 +100,7 @@ class Auth
 
         $_SESSION['gebruiker_id']  = $id;
         $_SESSION['studentnummer'] = $studentnummer;
+        $_SESSION['naam']          = $naam;
 
         return true;
     }
@@ -80,6 +126,13 @@ class Auth
         self::startSessie();
 
         return $_SESSION['studentnummer'] ?? null;
+    }
+
+    public static function naam(): ?string
+    {
+        self::startSessie();
+
+        return $_SESSION['naam'] ?? null;
     }
 
     public static function uitloggen(): void

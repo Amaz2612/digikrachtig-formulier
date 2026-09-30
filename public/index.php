@@ -19,6 +19,7 @@ if ($config['debug']) {
 }
 
 require_once __DIR__ . '/../app/Database.php';
+require_once __DIR__ . '/../app/Versleuteling.php';
 require_once __DIR__ . '/../app/Auth.php';
 require_once __DIR__ . '/../app/Beveiliging.php';
 require_once __DIR__ . '/../app/Voorwaarden.php';
@@ -41,12 +42,19 @@ try {
             exit('Het formulier is verlopen. Ga terug en probeer het opnieuw.');
         }
 
-        if (Auth::login($pdo, (string) ($_POST['studentnummer'] ?? ''))) {
+        $ingevuldNummer = trim((string) ($_POST['studentnummer'] ?? ''));
+        $ingevuldeNaam  = trim((string) ($_POST['naam'] ?? ''));
+        $naam           = Auth::schoonNaam($ingevuldeNaam);
+
+        if ($naam === null) {
+            $foutmelding = 'Vul je voor- en achternaam in: alleen letters, minstens twee woorden.';
+        } elseif (Auth::login($pdo, $ingevuldNummer, $naam, (string) $config['crypt_sleutel'])) {
             header('Location: ?actie=formulier');
             exit;
+        } else {
+            $foutmelding = 'Vul een geldig studentnummer in (alleen cijfers).';
         }
 
-        $foutmelding = 'Vul een geldig studentnummer in (alleen cijfers).';
         require __DIR__ . '/../app/views/login.php';
         exit;
     }
@@ -54,6 +62,14 @@ try {
     if ($actie === 'uitloggen') {
         Auth::uitloggen();
         header('Location: ?actie=login');
+        exit;
+    }
+
+    // Automatisch opslaan verwacht JSON terug, geen inlogpagina.
+    if ($actie === 'autosave' && !Auth::isIngelogd()) {
+        http_response_code(401);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'reden' => 'uitgelogd']);
         exit;
     }
 
@@ -73,6 +89,15 @@ try {
             }
 
             $controller->verwerk();
+            break;
+
+        case 'autosave':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                exit;
+            }
+
+            $controller->autosave();
             break;
 
         case 'klaar':

@@ -164,6 +164,7 @@ CREATE TABLE form_submissions (
   form_id       BIGINT UNSIGNED NOT NULL,
   user_id       BIGINT UNSIGNED NOT NULL,
   status        ENUM('concept','ingediend') NOT NULL DEFAULT 'concept',
+  huidige_stap  VARCHAR(50)         NULL,
   gestart_op    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   ingediend_op  DATETIME            NULL,
   PRIMARY KEY (id),
