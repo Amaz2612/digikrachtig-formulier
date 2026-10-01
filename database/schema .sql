@@ -214,7 +214,7 @@ CREATE TABLE submission_events (
   id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   submission_id  BIGINT UNSIGNED NOT NULL,
   event_type     ENUM('aangemaakt','opgeslagen','validatie_mislukt',
-                      'ingediend') NOT NULL,
+                      'ingediend','gereset') NOT NULL,
   opmerking      VARCHAR(255)        NULL,
   created_at     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),

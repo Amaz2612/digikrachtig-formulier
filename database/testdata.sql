@@ -6,5 +6,5 @@
 USE digikrachtig;
 
 INSERT INTO users (studentnummer) VALUES
-  ('2100001'),
-  ('2100002');
+  ('rv2100001'),
+  ('rv2100002');

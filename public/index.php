@@ -23,6 +23,8 @@ require_once __DIR__ . '/../app/Versleuteling.php';
 require_once __DIR__ . '/../app/Auth.php';
 require_once __DIR__ . '/../app/Otp.php';
 require_once __DIR__ . '/../app/Beveiliging.php';
+require_once __DIR__ . '/../app/BeheerAuth.php';
+require_once __DIR__ . '/../app/models/BeheerderModel.php';
 require_once __DIR__ . '/../app/Voorwaarden.php';
 require_once __DIR__ . '/../app/Validatie.php';
 require_once __DIR__ . '/../app/models/FormulierModel.php';
@@ -65,6 +67,16 @@ try {
         $naam           = Auth::schoonNaam($ingevuldeNaam);
         $email          = Auth::schoonEmail($ingevuldeEmail);
 
+        // Geen studentnummer, maar wel iets dat een gebruikersnaam kan
+        // zijn: dan logt er een beheerder in. Naam en e-mail zijn dan niet
+        // nodig; de volgende stap vraagt om het wachtwoord.
+        if ($studentnummer === null && BeheerAuth::lijktGebruikersnaam($ingevuldNummer)) {
+            Otp::stop();
+            BeheerAuth::startPoging($ingevuldNummer);
+            header('Location: ?actie=wachtwoord');
+            exit;
+        }
+
         if ($studentnummer === null) {
             $foutmelding = 'Vul een geldig studentnummer in (alleen cijfers).';
         } elseif ($naam === null) {
@@ -73,6 +85,7 @@ try {
             $foutmelding = 'Vul een geldig e-mailadres in.';
         } else {
             // Nog niet inloggen: eerst de code per mail controleren.
+            BeheerAuth::stopPoging();
             $stuurCode(Otp::start($studentnummer, $naam, $email));
             header('Location: ?actie=otp');
             exit;
@@ -130,6 +143,45 @@ try {
 
         $poging = Otp::gegevens();
         require __DIR__ . '/../app/views/otp.php';
+        exit;
+    }
+
+    // De pagina waar een beheerder zijn wachtwoord invult. Klopt het,
+    // dan gaat hij naar de beheerpagina (admin.php).
+    if ($actie === 'wachtwoord') {
+        if (!BeheerAuth::pogingBezig()) {
+            header('Location: ?actie=login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!Beveiliging::tokenKlopt($_POST['csrf_token'] ?? null)) {
+                http_response_code(400);
+                exit('Het formulier is verlopen. Ga terug en probeer het opnieuw.');
+            }
+
+            $uitkomst = BeheerAuth::controleerPoging($pdo, (string) ($_POST['wachtwoord'] ?? ''));
+
+            if ($uitkomst === 'goed') {
+                header('Location: admin.php');
+                exit;
+            }
+
+            if ($uitkomst === 'fout') {
+                // Bewust geen verschil tussen een onbekende naam en een
+                // fout wachtwoord: niet verraden welke namen bestaan.
+                $foutmelding = 'Gebruikersnaam of wachtwoord klopt niet.';
+            } else {
+                $foutmelding = $uitkomst === 'verlopen'
+                    ? 'Dit duurde te lang. Log opnieuw in.'
+                    : 'Te vaak een verkeerd wachtwoord ingevuld. Log opnieuw in.';
+                require __DIR__ . '/../app/views/login.php';
+                exit;
+            }
+        }
+
+        $gebruikersnaam = BeheerAuth::pogingGebruikersnaam();
+        require __DIR__ . '/../app/views/wachtwoord.php';
         exit;
     }
 

@@ -8,6 +8,12 @@
  * Zelfde opmaak als de rest van de site: een witte kaart op de
  * lichtblauwe achtergrond met de golven. De smalle variant van de
  * kaart (.kaart-smal) staat al in public/css/stijl.css.
+ *
+ * Ook beheerders loggen hier in: zij vullen bij Studentnummer hun
+ * gebruikersnaam in. Naam en e-mail zijn dan niet nodig; het script
+ * onderaan verbergt die velden zodra er geen nummer staat. Daarom
+ * staat 'required' niet in de HTML maar wordt het door het script
+ * gezet. Staat JavaScript uit, dan controleert de server het toch.
  */
 ?>
 <!DOCTYPE html>
@@ -37,22 +43,30 @@
     <form method="post" action="?actie=inloggen">
         <?= Beveiliging::veld() ?>
 
+        <?php /* 'rv' staat vast voor het veld; de student typt alleen de
+                 cijfers. Komt het nummer terug van de server (met rv),
+                 dan halen we rv eraf, anders staat het er twee keer. */ ?>
         <label for="studentnummer">Studentnummer</label>
-        <input type="text" id="studentnummer" name="studentnummer"
-               inputmode="numeric" placeholder="2100001" required
-               value="<?= htmlspecialchars((string) ($ingevuldNummer ?? ''), ENT_QUOTES) ?>">
+        <div class="veld-voorvoegsel">
+            <span aria-hidden="true">rv</span>
+            <input type="text" id="studentnummer" name="studentnummer"
+                   maxlength="50" autocomplete="username" placeholder="2100001" required
+                   value="<?= htmlspecialchars(preg_replace('/^rv/i', '', (string) ($ingevuldNummer ?? '')), ENT_QUOTES) ?>">
+        </div>
 
-        <label for="naam">Naam</label>
-        <input type="text" id="naam" name="naam" maxlength="60"
-               autocomplete="name" placeholder="Voor- en achternaam" required
-               pattern="[\p{L}\p{M}]+( [\p{L}\p{M}]+)+"
-               title="Vul je voor- en achternaam in: alleen letters, minstens twee woorden."
-               value="<?= htmlspecialchars((string) ($ingevuldeNaam ?? ''), ENT_QUOTES) ?>">
+        <div id="studentvelden">
+            <label for="naam">Naam</label>
+            <input type="text" id="naam" name="naam" maxlength="60"
+                   autocomplete="name" placeholder="Voor- en achternaam"
+                   pattern="[\p{L}\p{M}]+( [\p{L}\p{M}]+)+"
+                   title="Vul je voor- en achternaam in: alleen letters, minstens twee woorden."
+                   value="<?= htmlspecialchars((string) ($ingevuldeNaam ?? ''), ENT_QUOTES) ?>">
 
-        <label for="email">E-mail</label>
-        <input type="email" id="email" name="email" maxlength="255"
-               autocomplete="email" placeholder="naam@voorbeeld.nl" required
-               value="<?= htmlspecialchars((string) ($ingevuldeEmail ?? ''), ENT_QUOTES) ?>">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" maxlength="255"
+                   autocomplete="email" placeholder="naam@voorbeeld.nl"
+                   value="<?= htmlspecialchars((string) ($ingevuldeEmail ?? ''), ENT_QUOTES) ?>">
+        </div>
 
         <div class="knoppen">
             <button type="submit">Inloggen</button>
@@ -66,13 +80,40 @@
    woorden. Andere tekens komen er bij het typen niet in. De server
    controleert dit ook (Auth::schoonNaam). */
 (function () {
-    var veld = document.getElementById('naam');
+    var veld          = document.getElementById('naam');
+    var email         = document.getElementById('email');
+    var nummer        = document.getElementById('studentnummer');
+    var studentvelden = document.getElementById('studentvelden');
 
     if (veld === null) {
         return;
     }
 
     var MELDING = 'Vul je voor- en achternaam in: alleen letters, minstens twee woorden.';
+
+    /* Staat er bij Studentnummer iets anders dan cijfers (met of zonder
+       rv), dan is het een beheerder. Die heeft naam en e-mail niet
+       nodig. Dezelfde keuze maakt de server in public/index.php. */
+    function isBeheerder() {
+        var waarde = nummer.value.trim();
+
+        return waarde !== '' && !/^(rv)?[0-9]*$/i.test(waarde);
+    }
+
+    function wissel() {
+        var beheerder = isBeheerder();
+
+        studentvelden.hidden = beheerder;
+        veld.required        = !beheerder;
+        email.required       = !beheerder;
+
+        if (beheerder) {
+            veld.setCustomValidity('');
+        }
+    }
+
+    nummer.addEventListener('input', wissel);
+    wissel();
 
     function opschonen() {
         veld.value = veld.value
@@ -91,7 +132,9 @@
     veld.addEventListener('input', opschonen);
     veld.addEventListener('change', controleren);
     veld.form.addEventListener('submit', function (gebeurtenis) {
-        controleren();
+        if (!isBeheerder()) {
+            controleren();
+        }
 
         if (!veld.form.checkValidity()) {
             gebeurtenis.preventDefault();

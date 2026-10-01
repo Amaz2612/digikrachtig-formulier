@@ -534,6 +534,36 @@ button[name="verstuur"]:hover,
     margin-bottom: 0.4rem;
 }
 
+/* Studentnummer met een vaste 'rv' ervoor: het grijze blokje en het
+   invulveld lijken samen één veld. */
+.veld-voorvoegsel {
+    display: flex;
+}
+
+.veld-voorvoegsel span {
+    display: flex;
+    align-items: center;
+    padding: 0 0.85rem;
+    border: 1px solid var(--rand);
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    background: var(--achtergrond);
+    color: var(--grijs);
+    font-weight: 600;
+}
+
+.veld-voorvoegsel input {
+    min-width: 0;
+    border-radius: 0 10px 10px 0;
+}
+
+/* Naam en e-mail staan in een eigen blok (dat verborgen wordt als er
+   een beheerder inlogt); de eerste kop daarin moet dezelfde ruimte
+   erboven hebben als de andere. */
+.kaart-smal .veld-voorvoegsel + div > label:first-child {
+    margin-top: 1rem;
+}
+
 /* Het zinnetje onder de kop, in hetzelfde grijs als de hulptekst
    bij een vraag. */
 .kaart-smal small {
@@ -647,4 +677,126 @@ form.stappen .knop-volgende:hover {
 
 #opslagstatus.opslag-fout {
     color: #b91c1c;
+}
+
+/* --- Beheerpagina (public/admin.php) --- */
+/*
+ * Alleen wat er voor de beheerpagina bij moest: tabellen, de drie
+ * tellingen en een rode knop voor resetten. Verder dezelfde kaart,
+ * knoppen en meldingen als de rest van de site.
+ */
+
+/* Het overzicht heeft een tabel met zes kolommen, dus wat breder. */
+.kaart-breed {
+    max-width: 1000px;
+}
+
+.cijfers {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin: 1rem 0 1.5rem;
+}
+
+.cijfers p {
+    flex: 1 1 8rem;
+    margin: 0;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--rand);
+    border-radius: 10px;
+    color: var(--grijs);
+    font-size: 0.9rem;
+}
+
+.cijfers strong {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--blauw-donker);
+}
+
+.tabel-scroll {
+    overflow-x: auto;
+}
+
+table.lijst,
+table.gegevens {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+table.lijst th,
+table.lijst td,
+table.gegevens th,
+table.gegevens td {
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--rand);
+}
+
+table.lijst th,
+table.gegevens th {
+    color: var(--grijs);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+table.lijst tbody tr:hover {
+    background: #f8faff;
+}
+
+table.gegevens th {
+    width: 9rem;
+}
+
+.status {
+    font-weight: 600;
+}
+
+.status-concept {
+    color: var(--grijs);
+}
+
+.status-ingediend {
+    color: var(--groen);
+}
+
+.antwoord {
+    margin-bottom: 1.25rem;
+}
+
+.antwoord p,
+.antwoord ul {
+    margin: 0;
+}
+
+.antwoord-vraag {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.antwoord-leeg {
+    color: var(--grijs);
+    font-style: italic;
+}
+
+.knoppen button.knop-gevaar[type="submit"] {
+    background: var(--rood);
+    border-color: var(--rood);
+    color: #fff;
+}
+
+.knoppen button.knop-gevaar[type="submit"]:hover {
+    background: #b93a51;
+}
+
+/* Wel voor een schermlezer, niet zichtbaar. */
+.verborgen {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
 }

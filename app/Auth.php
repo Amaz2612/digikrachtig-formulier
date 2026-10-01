@@ -43,14 +43,26 @@ class Auth
     }
 
     /**
-     * Studentnummer: alleen cijfers, 4 tot 20 lang. Geeft null terug
-     * als het niet klopt.
+     * Studentnummer: 'rv' met daarachter 4 tot 18 cijfers, bijvoorbeeld
+     * rv2100001. Op de inlogpagina staat 'rv' al voor het veld, dus de
+     * student typt alleen de cijfers. Typt hij 'rv' toch zelf, dan is
+     * dat ook goed. Geeft het nummer met 'rv' ervoor terug, of null als
+     * het niet klopt.
+     *
+     * Maximaal 18 cijfers, omdat de kolom users.studentnummer 20 tekens
+     * breed is en 'rv' er twee van inneemt.
      */
     public static function schoonStudentnummer(string $studentnummer): ?string
     {
-        $studentnummer = trim($studentnummer);
+        $studentnummer = strtolower(trim($studentnummer));
 
-        return preg_match('/^[0-9]{4,20}$/', $studentnummer) ? $studentnummer : null;
+        if (str_starts_with($studentnummer, 'rv')) {
+            $studentnummer = substr($studentnummer, 2);
+        }
+
+        return preg_match('/^[0-9]{4,18}$/', $studentnummer)
+            ? 'rv' . $studentnummer
+            : null;
     }
 
     /**
@@ -90,7 +102,8 @@ class Auth
     ): bool {
         $studentnummer = trim($studentnummer);
 
-        if (!preg_match('/^[0-9]{4,20}$/', $studentnummer)) {
+        // Zelfde vorm als schoonStudentnummer() teruggeeft: rv + cijfers.
+        if (!preg_match('/^rv[0-9]{4,18}$/', $studentnummer)) {
             return false;
         }
 
