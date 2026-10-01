@@ -26,6 +26,8 @@
 </head>
 <body>
 
+<?php require __DIR__ . '/kop.php'; ?>
+
 <div class="kaart">
 
     <div class="balk-boven">

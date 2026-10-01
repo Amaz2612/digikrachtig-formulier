@@ -43,18 +43,49 @@ class Auth
     }
 
     /**
+     * Studentnummer: alleen cijfers, 4 tot 20 lang. Geeft null terug
+     * als het niet klopt.
+     */
+    public static function schoonStudentnummer(string $studentnummer): ?string
+    {
+        $studentnummer = trim($studentnummer);
+
+        return preg_match('/^[0-9]{4,20}$/', $studentnummer) ? $studentnummer : null;
+    }
+
+    /**
+     * Controleert het ingevulde e-mailadres. Geeft null terug als het
+     * geen geldig adres is. Het adres wordt alleen in de sessie bewaard
+     * om het formulier vooraf in te vullen; bij Padgin is het al bekend.
+     */
+    public static function schoonEmail(string $email): ?string
+    {
+        $email = trim($email);
+
+        if ($email === '' || mb_strlen($email) > 255) {
+            return null;
+        }
+
+        return filter_var($email, FILTER_VALIDATE_EMAIL) === false
+            ? null
+            : $email;
+    }
+
+    /**
      * Logt in op studentnummer en bewaart de naam (versleuteld). De
      * gebruiker wordt aangemaakt als hij nog niet bestaat, zodat je
      * makkelijk kunt testen. Vult de student bij een volgende keer een
      * andere naam in, dan wordt de naam bijgewerkt.
      *
      * @param string $naam    al schoongemaakt met schoonNaam()
+     * @param string $email   al gecontroleerd met schoonEmail()
      * @param string $sleutel crypt_sleutel uit config/config.php
      */
     public static function login(
         PDO $pdo,
         string $studentnummer,
         string $naam,
+        string $email,
         string $sleutel
     ): bool {
         $studentnummer = trim($studentnummer);
@@ -101,6 +132,7 @@ class Auth
         $_SESSION['gebruiker_id']  = $id;
         $_SESSION['studentnummer'] = $studentnummer;
         $_SESSION['naam']          = $naam;
+        $_SESSION['email']         = $email;
 
         return true;
     }
@@ -133,6 +165,13 @@ class Auth
         self::startSessie();
 
         return $_SESSION['naam'] ?? null;
+    }
+
+    public static function email(): ?string
+    {
+        self::startSessie();
+
+        return $_SESSION['email'] ?? null;
     }
 
     public static function uitloggen(): void

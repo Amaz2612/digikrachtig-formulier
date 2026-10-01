@@ -53,6 +53,155 @@ body::before {
         no-repeat bottom center / 100% 100%;
 }
 
+/* De foto achter alles, subtiel: een lichtblauwe waas eroverheen en
+   een beetje vervaagd, zodat de kaart en de tekst goed leesbaar
+   blijven. Staat achter de golven (z-index -2). */
+body::after {
+    content: "";
+    position: fixed;
+    inset: -10px;
+    z-index: -2;
+    background:
+        linear-gradient(rgba(243, 246, 253, 0.86), rgba(243, 246, 253, 0.86)),
+        url("../img/achtergrond.jpg") center 30% / cover no-repeat;
+    filter: blur(3px) saturate(0.8);
+}
+
+/* --- De balk bovenaan: logo links, menu rechts --- */
+/* Zelfde opbouw als digikrachtig.nl: menu-items, een witte pil
+   "Stel je vraag" met een blauw rondje en een zoek-icoon. De balk
+   heeft geen harde rand: de lichte achtergrondkleur loopt naar
+   beneden toe weg in de foto. De negatieve marge heft de padding van
+   body op, zodat de balk over de volle breedte staat. */
+.kop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin: -2.5rem -1rem 1.5rem;
+    padding: 1rem clamp(1rem, 4vw, 2.5rem) 2rem;
+    background: linear-gradient(
+        to bottom,
+        rgba(243, 246, 253, 0.85) 0%,
+        rgba(243, 246, 253, 0.55) 55%,
+        rgba(243, 246, 253, 0) 100%
+    );
+}
+
+.logo {
+    display: inline-block;
+    flex-shrink: 0;
+    transition: opacity 0.2s;
+}
+
+.logo:hover,
+.logo:focus-visible {
+    opacity: 0.8;
+}
+
+.logo img {
+    display: block;
+    height: 34px;
+    width: auto;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: clamp(1rem, 3vw, 2.5rem);
+}
+
+/* De items gaan nergens naartoe (geen href), maar zien er wel uit
+   als links. */
+.nav a {
+    cursor: pointer;
+    user-select: none;
+}
+
+.nav-link {
+    color: var(--blauw-donker);
+    font-size: 1.05rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.nav-link:hover {
+    color: var(--blauw);
+    text-decoration: underline;
+    text-underline-offset: 6px;
+}
+
+.nav-vraag {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.35rem 0.4rem 0.35rem 1.4rem;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--tekst);
+    font-size: 1.05rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(31, 58, 107, 0.08);
+    transition: box-shadow 0.2s;
+}
+
+.nav-vraag:hover {
+    box-shadow: 0 6px 20px rgba(31, 58, 107, 0.16);
+}
+
+.nav-vraag-pijl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    background: var(--blauw);
+    color: #fff;
+    transition: transform 0.2s;
+}
+
+.nav-vraag:hover .nav-vraag-pijl {
+    transform: translateX(2px);
+}
+
+.nav-zoek {
+    display: inline-flex;
+    color: var(--blauw-donker);
+    transition: color 0.2s;
+}
+
+.nav-zoek:hover {
+    color: var(--blauw);
+}
+
+/* Smal scherm: alleen de knop en het zoek-icoon houden. */
+@media (max-width: 760px) {
+    .nav-link {
+        display: none;
+    }
+
+    .nav {
+        gap: 1rem;
+    }
+
+    .logo img {
+        height: 28px;
+    }
+
+    .nav-vraag {
+        gap: 0.6rem;
+        padding-left: 1rem;
+        font-size: 0.95rem;
+    }
+
+    .nav-vraag-pijl {
+        width: 2rem;
+        height: 2rem;
+    }
+}
+
 /* --- De kaart --- */
 
 .kaart {
@@ -402,6 +551,18 @@ button[name="verstuur"]:hover,
 
 .kaart-smal .knoppen button {
     flex: 1;
+}
+
+/* Knop die eruitziet als een link (OTP-pagina: nieuwe code sturen). */
+button.knop-link {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-weight: inherit;
+    font-size: inherit;
+    color: var(--blauw);
+    text-decoration: underline;
 }
 
 /* --- Stappen --- */

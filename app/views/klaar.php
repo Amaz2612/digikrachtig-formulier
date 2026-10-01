@@ -17,9 +17,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bedankt - Digikrachtig</title>
-    <link rel="stylesheet" href="css/stijl.css">
+    <link rel="stylesheet" href="css/stijl.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/stijl.css') ?>">
 </head>
 <body>
+
+<?php require __DIR__ . '/kop.php'; ?>
 
 <div class="kaart kaart-smal">
 

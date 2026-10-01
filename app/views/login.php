@@ -16,9 +16,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Inloggen - Digikrachtig</title>
-    <link rel="stylesheet" href="css/stijl.css">
+    <link rel="stylesheet" href="css/stijl.css?v=<?= (int) @filemtime(__DIR__ . '/../../public/css/stijl.css') ?>">
 </head>
 <body>
+
+<?php require __DIR__ . '/kop.php'; ?>
 
 <div class="kaart kaart-smal">
 
@@ -26,7 +28,7 @@
 
     <h1>Inloggen</h1>
 
-    <p><small>Tijdelijke login voor het testen. Vul je studentnummer en je naam in.</small></p>
+    <p><small>Tijdelijke login voor het testen. Vul je studentnummer, naam en e-mail in.</small></p>
 
     <?php if (!empty($foutmelding)): ?>
         <p class="melding-fout"><?= htmlspecialchars($foutmelding) ?></p>
@@ -46,6 +48,11 @@
                pattern="[\p{L}\p{M}]+( [\p{L}\p{M}]+)+"
                title="Vul je voor- en achternaam in: alleen letters, minstens twee woorden."
                value="<?= htmlspecialchars((string) ($ingevuldeNaam ?? ''), ENT_QUOTES) ?>">
+
+        <label for="email">E-mail</label>
+        <input type="email" id="email" name="email" maxlength="255"
+               autocomplete="email" placeholder="naam@voorbeeld.nl" required
+               value="<?= htmlspecialchars((string) ($ingevuldeEmail ?? ''), ENT_QUOTES) ?>">
 
         <div class="knoppen">
             <button type="submit">Inloggen</button>

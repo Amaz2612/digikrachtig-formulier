@@ -51,6 +51,22 @@ class FormulierController
             ? $this->inzendingModel->antwoorden((int) $inzending['id'])
             : $ingevuld;
 
+        // Naam en e-mail van de login vooraf invullen, maar alleen als
+        // de student daar zelf nog niets heeft staan.
+        if ($fouten === []) {
+            $vooraf = [
+                'ingevuld_door' => Auth::naam(),
+                'email'         => Auth::email(),
+                'naam_student'  => Auth::naam(),
+            ];
+
+            foreach ($vooraf as $code => $waarde) {
+                if ($waarde !== null && trim((string) ($antwoorden[$code] ?? '')) === '') {
+                    $antwoorden[$code] = $waarde;
+                }
+            }
+        }
+
         $this->toonView('formulier', [
             'formulier'  => $formulier,
             'structuur'  => $structuur,

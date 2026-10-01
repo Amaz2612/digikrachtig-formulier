@@ -21,6 +21,7 @@ if ($config['debug']) {
 require_once __DIR__ . '/../app/Database.php';
 require_once __DIR__ . '/../app/Versleuteling.php';
 require_once __DIR__ . '/../app/Auth.php';
+require_once __DIR__ . '/../app/Otp.php';
 require_once __DIR__ . '/../app/Beveiliging.php';
 require_once __DIR__ . '/../app/Voorwaarden.php';
 require_once __DIR__ . '/../app/Validatie.php';
@@ -35,6 +36,21 @@ Auth::startSessie();
 $pdo   = Database::verbinding();
 $actie = $_GET['actie'] ?? 'formulier';
 
+/**
+ * Stuurt de inlogcode naar het e-mailadres van de lopende poging. Met
+ * debug aan gaat er geen mail weg en komt de code op de OTP-pagina te
+ * staan, zodat je zonder mailserver kunt testen.
+ */
+$stuurCode = function (string $code) use ($config): void {
+    if ($config['debug']) {
+        $_SESSION['otp']['testcode'] = $code;
+
+        return;
+    }
+
+    $_SESSION['otp']['mail_mislukt'] = !Otp::verstuur($_SESSION['otp']['email'], $code);
+};
+
 try {
     // Inloggen verwerken
     if ($actie === 'inloggen' && $_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -44,18 +60,95 @@ try {
 
         $ingevuldNummer = trim((string) ($_POST['studentnummer'] ?? ''));
         $ingevuldeNaam  = trim((string) ($_POST['naam'] ?? ''));
+        $ingevuldeEmail = trim((string) ($_POST['email'] ?? ''));
+        $studentnummer  = Auth::schoonStudentnummer($ingevuldNummer);
         $naam           = Auth::schoonNaam($ingevuldeNaam);
+        $email          = Auth::schoonEmail($ingevuldeEmail);
 
-        if ($naam === null) {
-            $foutmelding = 'Vul je voor- en achternaam in: alleen letters, minstens twee woorden.';
-        } elseif (Auth::login($pdo, $ingevuldNummer, $naam, (string) $config['crypt_sleutel'])) {
-            header('Location: ?actie=formulier');
-            exit;
-        } else {
+        if ($studentnummer === null) {
             $foutmelding = 'Vul een geldig studentnummer in (alleen cijfers).';
+        } elseif ($naam === null) {
+            $foutmelding = 'Vul je voor- en achternaam in: alleen letters, minstens twee woorden.';
+        } elseif ($email === null) {
+            $foutmelding = 'Vul een geldig e-mailadres in.';
+        } else {
+            // Nog niet inloggen: eerst de code per mail controleren.
+            $stuurCode(Otp::start($studentnummer, $naam, $email));
+            header('Location: ?actie=otp');
+            exit;
         }
 
         require __DIR__ . '/../app/views/login.php';
+        exit;
+    }
+
+    // De pagina waar de student de code uit de mail invult
+    if ($actie === 'otp') {
+        if (!Otp::bezig()) {
+            header('Location: ?actie=login');
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!Beveiliging::tokenKlopt($_POST['csrf_token'] ?? null)) {
+                exit('Het formulier is verlopen. Ga terug en probeer het opnieuw.');
+            }
+
+            $uitkomst = Otp::controleer((string) ($_POST['code'] ?? ''));
+
+            if ($uitkomst === 'goed') {
+                $poging = Otp::gegevens();
+                Otp::stop();
+                Auth::login(
+                    $pdo,
+                    $poging['studentnummer'],
+                    $poging['naam'],
+                    $poging['email'],
+                    (string) $config['crypt_sleutel']
+                );
+                header('Location: ?actie=formulier');
+                exit;
+            }
+
+            if ($uitkomst === 'fout') {
+                $foutmelding = 'Deze code klopt niet. Probeer het opnieuw.';
+            } else {
+                // Verlopen of te vaak fout: helemaal opnieuw beginnen,
+                // maar de ingevulde gegevens wel laten staan.
+                $poging         = Otp::gegevens();
+                $ingevuldNummer = $poging['studentnummer'];
+                $ingevuldeNaam  = $poging['naam'];
+                $ingevuldeEmail = $poging['email'];
+                Otp::stop();
+                $foutmelding = $uitkomst === 'verlopen'
+                    ? 'Je code is verlopen. Log opnieuw in.'
+                    : 'Te vaak een verkeerde code ingevuld. Log opnieuw in.';
+                require __DIR__ . '/../app/views/login.php';
+                exit;
+            }
+        }
+
+        $poging = Otp::gegevens();
+        require __DIR__ . '/../app/views/otp.php';
+        exit;
+    }
+
+    if ($actie === 'otp-opnieuw' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (!Beveiliging::tokenKlopt($_POST['csrf_token'] ?? null)) {
+            exit('Het formulier is verlopen. Ga terug en probeer het opnieuw.');
+        }
+
+        if (!Otp::bezig()) {
+            header('Location: ?actie=login');
+            exit;
+        }
+
+        if (Otp::magOpnieuwSturen()) {
+            $stuurCode(Otp::nieuweCode());
+            header('Location: ?actie=otp&opnieuw=1');
+        } else {
+            header('Location: ?actie=otp&wacht=1');
+        }
         exit;
     }
 
